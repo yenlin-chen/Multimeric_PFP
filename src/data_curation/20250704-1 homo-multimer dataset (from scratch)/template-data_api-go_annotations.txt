@@ -1,0 +1,34 @@
+{
+  assemblies(assembly_ids: ASSEMBLY_LIST_PLACEHOLDER)
+  {
+    rcsb_id
+    entry {
+      polymer_entities {
+        # rcsb_polymer_entity_container_identifiers {
+        #   entity_id
+        #   asym_ids
+        #   auth_asym_ids
+        #   reference_sequence_identifiers {
+        #     database_name
+        #     database_accession
+        #   }
+        # }
+        # entity_poly {
+        #   pdbx_seq_one_letter_code_can
+        #   rcsb_sample_sequence_length
+        #   type
+        # }
+        rcsb_polymer_entity_annotation {
+          annotation_id
+          name
+          provenance_source
+          type
+          annotation_lineage {
+            id
+            name
+          }
+        }
+      }
+    }
+  }
+}

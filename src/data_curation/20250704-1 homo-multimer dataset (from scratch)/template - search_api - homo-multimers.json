@@ -1,0 +1,35 @@
+{
+  "query": {
+    "type": "group",
+    "logical_operator": "and",
+    "nodes": [
+      {
+        "type": "terminal",
+        "service": "text",
+        "parameters": {
+          "attribute": "rcsb_struct_symmetry.oligomeric_state",
+          "operator": "exact_match",
+          "value": "Homo MULTIMERIC_PLACEHOLDER-mer"
+        }
+      },
+      {
+        "type": "terminal",
+        "service": "text",
+        "parameters": {
+          "attribute": "rcsb_entry_info.resolution_combined",
+          "operator": "range",
+          "value": {
+            "from": 0,
+            "include_lower": true,
+            "to": RESOLUTION_PLACEHOLDER,
+            "include_upper": true
+          }
+        }
+      }
+    ]
+  },
+  "request_options": {
+    "return_all_hits": true
+  },
+  "return_type": "assembly"
+}

@@ -531,7 +531,7 @@ class ANM_Computer:
         header = data[0]
         mapping = data[1:,:3].astype(np.int32)
 
-        return mapping[:,0], mapping[:,1], mapping[:,2]
+        return mapping[:,0], mapping[:,1], mapping[:,2], data[1:,3]
 
 class TNM_Computer:
     '''Computes TNM features for a given protein structure.

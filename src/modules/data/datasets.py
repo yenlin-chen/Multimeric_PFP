@@ -289,9 +289,10 @@ class Dataset(pyg.data.Dataset):
 
                     assert np.array_equal(seq1_shared, seq2_shared)
 
-            if self.use_monomers:
-                assert atoms.getChids()[0] == 'A'
-                atoms = atoms.select('chain A')
+            # if self.use_monomers:
+            # always use chain A
+            assert atoms.getChids()[0] == 'A'
+            atoms = atoms.select('chain A')
 
             # proceed with residues in the intersection
             atoms.setResnums(atoms.getResnums() - min_resnum)
@@ -333,12 +334,30 @@ class Dataset(pyg.data.Dataset):
             # ### PERSISTENCE IMAGES
             # data.pi = torch.load(path_to_pi)
 
+
+            mat_idx, resnums, collapsed_idx, chain_id = self.enm_computer.get_mapping(
+                pdb_assembly_id
+            )
+            loc_chain = chain_id=='A'
+            mat_idx = mat_idx[loc_chain]
+            resnums = resnums[loc_chain]
+            collapsed_idx = collapsed_idx[loc_chain]
+
+            assert len(mat_idx) == mat_idx[-1] + 1
+
             ### BUILD CONTACT GRAPH
             # contact maps are built based on the position of Ca atoms
             all_edge_index, resnum_ij, distance = self.enm_computer.get_couplings(
                 pdb_assembly_id,
                 et_type='contact'
             )
+            loc_edge = np.bitwise_and(
+                all_edge_index[:,0]<=mat_idx[-1],
+                all_edge_index[:,1]<=mat_idx[-1]
+            )
+            all_edge_index = all_edge_index[loc_edge]
+            resnum_ij = resnum_ij[loc_edge]
+            distance = distance[loc_edge]
 
             loc_to_include = (
                 np.isin(resnum_ij[:,0], resnum_intersection, assume_unique=True) &
@@ -347,9 +366,6 @@ class Dataset(pyg.data.Dataset):
             min_mat_idx = all_edge_index[loc_to_include,:].min()
 
             # dictionaries to convert between resnum and matrix index
-            mat_idx, resnums, collapsed_idx = self.enm_computer.get_mapping(
-                pdb_assembly_id
-            )
             resnum2homo_idx = {
                 resnums[idx]: collapsed_idx[idx] - min_mat_idx
                 for idx in range(len(resnums))
@@ -406,7 +422,7 @@ class Dataset(pyg.data.Dataset):
                     pdb_assembly_id,
                     et_type=ct
                 )
-                couplings = couplings[loc_to_include]
+                couplings = couplings[loc_edge][loc_to_include]
 
                 # dataset-wide thresholds
                 if self.thresholds[ct].endswith('DCONT'):
@@ -621,7 +637,7 @@ if __name__ == '__main__':
     dataset_multimer = Dataset(
         pdb_assembly_ids,
         annotations=annotations,
-        version='v0',
+        version='v1',
         sequence_embedding='ProtTrans',
         enm_type='anm',
         use_monomers=False,
@@ -638,7 +654,7 @@ if __name__ == '__main__':
     dataset_monomer = Dataset(
         pdb_assembly_ids,
         annotations=annotations,
-        version='v0',
+        version='v1',
         sequence_embedding='ProtTrans',
         enm_type='anm',
         use_monomers=True,

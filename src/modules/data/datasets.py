@@ -130,7 +130,7 @@ class Dataset(pyg.data.Dataset):
     @property
     def pos_weight(self):
         count = np.sum(self.annotations, axis=0)
-        pos_weight = ( len(self.processed_file_names) - count ) / count
+        pos_weight = ( len(self.processed_assemblies) - count ) / count
         return torch.from_numpy(pos_weight)
 
     @property
@@ -301,7 +301,7 @@ class Dataset(pyg.data.Dataset):
                 f'{resnum_intersection.max() - min_resnum}'
             )
             atoms.setResnums(atoms.getResnums() + min_resnum)
-            resnames = atoms.select('chain A').getSequence(allres=False)
+            resnames = atoms.getSequence(allres=False)
             sequence = ''.join(resnames)
             n_residues = len(sequence)
 
@@ -496,7 +496,6 @@ class Dataset(pyg.data.Dataset):
                         f' This should be dealt with before calling this dataset.'
                     )
                     discard = True
-                    raise
                     break
 
                 edge_index = all_edge_index[couplings >= threshold].T # directed

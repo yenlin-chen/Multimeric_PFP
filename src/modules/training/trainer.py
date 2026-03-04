@@ -33,7 +33,7 @@ class Trainer:
         '''
 
         # components of one ML experiment
-        if device == torch.device('cuda'):
+        if device.type == 'cuda':
             self.model = torch.nn.DataParallel(model).to(device)
         else:
             self.model = model.to(device)
@@ -140,8 +140,10 @@ class Trainer:
 
             ### gather model outputs and labels
             # convert predicted values back to Celsius
-            preds[i*batch_size:(i+1)*batch_size] = pred
-            trues[i*batch_size:(i+1)*batch_size] = true
+            start = i * batch_size
+            end = start + pred.shape[0]
+            preds[start:end] = pred
+            trues[start:end] = true
             # accessions[i*batch_size:(i+1)*batch_size] = data_batch.accession
 
         if self.scheduler:
@@ -210,8 +212,10 @@ class Trainer:
 
             ### gather model outputs and labels
             # convert predicted values back to Celsius
-            preds[i*batch_size:(i+1)*batch_size] = pred
-            trues[i*batch_size:(i+1)*batch_size] = true
+            start = i * batch_size
+            end = start + pred.shape[0]
+            preds[start:end] = pred
+            trues[start:end] = true
             # accessions[i*batch_size:(i+1)*batch_size] = data_batch.accession
 
         avg_loss = total_loss / dataset_size

@@ -55,7 +55,7 @@ class ProtTrans_Encoder:
             'Rostlab/prot_t5_xl_uniref50',
         ).to(self.device)
 
-        self.model.full() if device=='cpu' else self.model.half()
+        self.model.float() if device=='cpu' else self.model.half()
         self.model.eval()
 
     def encode(self, sequence):

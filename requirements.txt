@@ -1,0 +1,27 @@
+# Core scientific stack
+numpy>=1.24
+scipy>=1.10
+matplotlib>=3.7
+
+# Deep learning
+torch>=2.2
+torch-geometric>=2.5
+torchinfo>=1.8
+
+# Bio/structure processing
+prody>=2.4
+biopython>=1.81
+
+# Sequence encoders
+transformers>=4.40
+sentencepiece>=0.1.99
+
+# Utilities and tracking
+tqdm>=4.66
+requests>=2.31
+wandb>=0.17
+
+# Optional (used in module self-tests / notebooks)
+scikit-learn>=1.3
+jupyter>=1.0
+ipykernel>=6.29

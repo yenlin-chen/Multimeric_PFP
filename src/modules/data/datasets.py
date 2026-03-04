@@ -130,7 +130,7 @@ class Dataset(pyg.data.Dataset):
     @property
     def pos_weight(self):
         count = np.sum(self.annotations, axis=0)
-        pos_weight = ( len(self.processed_file_names) - count ) / count
+        pos_weight = ( len(self.processed_assemblies) - count ) / count
         return torch.from_numpy(pos_weight)
 
     @property
@@ -496,7 +496,7 @@ class Dataset(pyg.data.Dataset):
                         f' This should be dealt with before calling this dataset.'
                     )
                     discard = True
-                    raise
+                    raise ValueError(f' -> {pdb_assembly_id} has nan as threshold for {ct}.')
                     break
 
                 edge_index = all_edge_index[couplings >= threshold].T # directed

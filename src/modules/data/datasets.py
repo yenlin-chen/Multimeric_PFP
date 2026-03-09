@@ -2,13 +2,13 @@ if __name__ == '__main__':
     from __init__ import external_dir, collation_dir, processed_dir, res_to_1hot
     # from retrievers import AlphaFold_Retriever
     from enm import ANM_Computer, TNM_Computer
-    from encoders import ProtTrans_Encoder, ProteinBERT_Encoder
+    from encoders import ProtTrans_Encoder#, ProteinBERT_Encoder
     # from persistence_image import PI_Computer
 else:
     from .__init__ import external_dir, collation_dir, processed_dir, res_to_1hot
     # from .retrievers import AlphaFold_Retriever
     from .enm import ANM_Computer, TNM_Computer
-    from .encoders import ProtTrans_Encoder, ProteinBERT_Encoder
+    from .encoders import ProtTrans_Encoder#, ProteinBERT_Encoder
     # from .persistence_image import PI_Computer
 
 import os, torch, prody, warnings
@@ -210,7 +210,8 @@ class Dataset(pyg.data.Dataset):
 
         ### INSTANTIATE ENCODERS (TO BE DELETED AFTER USE)
         if self.sequence_embedding == 'proteinbert':
-            encoder = ProteinBERT_Encoder()
+            # encoder = ProteinBERT_Encoder()
+            raise NotImplementedError('ProteinBERT encoder is not implemented')
         elif self.sequence_embedding == 'prottrans':
             encoder = ProtTrans_Encoder()
         else:
@@ -333,7 +334,6 @@ class Dataset(pyg.data.Dataset):
 
             # ### PERSISTENCE IMAGES
             # data.pi = torch.load(path_to_pi)
-
 
             mat_idx, resnums, collapsed_idx, chain_id = self.enm_computer.get_mapping(
                 pdb_assembly_id
@@ -637,7 +637,7 @@ if __name__ == '__main__':
     dataset_multimer = Dataset(
         pdb_assembly_ids,
         annotations=annotations,
-        version='v1',
+        version='test',
         sequence_embedding='ProtTrans',
         enm_type='anm',
         use_monomers=False,
@@ -654,7 +654,7 @@ if __name__ == '__main__':
     dataset_monomer = Dataset(
         pdb_assembly_ids,
         annotations=annotations,
-        version='v1',
+        version='test',
         sequence_embedding='ProtTrans',
         enm_type='anm',
         use_monomers=True,

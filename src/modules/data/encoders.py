@@ -2,42 +2,42 @@ import re, torch
 
 df_device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-class ProteinBERT_Encoder:
+# class ProtTrans_Encoder:
 
-    def __init__(self, device=df_device):
+#     def __init__(self, device=df_device):
 
-        from transformers import BertModel, BertTokenizer
+#         from transformers import BertModel, BertTokenizer
 
-        self.device = device
+#         self.device = device
 
-        self.tokenizer = BertTokenizer.from_pretrained(
-            'Rostlab/prot_bert_bfd',
-            do_lower_case=False
-        )
-        self.model = BertModel.from_pretrained(
-            'Rostlab/prot_bert_bfd'
-        ).to(self.device)
+#         self.tokenizer = BertTokenizer.from_pretrained(
+#             'Rostlab/prot_bert_bfd', # THIS IS NOT A PROTEINBERT MODEL!!!
+#             do_lower_case=False
+#         )
+#         self.model = BertModel.from_pretrained(
+#             'Rostlab/prot_bert_bfd'
+#         ).to(self.device)
 
-        self.model.eval()
+#         self.model.eval()
 
-    def encode(self, sequence):
+#     def encode(self, sequence):
 
-        if not isinstance(sequence, str):
-            raise TypeError(f'`sequence` must be a string, not {type(sequence)}')
+#         if not isinstance(sequence, str):
+#             raise TypeError(f'`sequence` must be a string, not {type(sequence)}')
 
-        sequence = ' '.join(re.sub(r"[UZOB]", "X", sequence.upper()))
+#         sequence = ' '.join(re.sub(r"[UZOB]", "X", sequence.upper()))
 
-        tokenized_inputs = self.tokenizer(
-            sequence, return_tensors='pt'
-        ).to(self.device)
+#         tokenized_inputs = self.tokenizer(
+#             sequence, return_tensors='pt'
+#         ).to(self.device)
 
-        with torch.no_grad():
-            output = self.model(**tokenized_inputs)
+#         with torch.no_grad():
+#             output = self.model(**tokenized_inputs)
 
-        return output.last_hidden_state[0,1:-1].detach().cpu()
+#         return output.last_hidden_state[0,1:-1].detach().cpu()
 
-    def __call__(self, sequence):
-        return self.encode(sequence)
+#     def __call__(self, sequence):
+#         return self.encode(sequence)
 
 class ProtTrans_Encoder:
 

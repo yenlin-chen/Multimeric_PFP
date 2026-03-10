@@ -2,14 +2,12 @@ if __name__ == '__main__':
     from __init__ import external_dir, collation_dir, processed_dir, res_to_1hot
     # from retrievers import AlphaFold_Retriever
     from enm import ANM_Computer, TNM_Computer
-    from encoders import ProtTrans_Encoder#, ProteinBERT_Encoder
-    # from persistence_image import PI_Computer
+    from encoders import ProtTrans_Encoder
 else:
     from .__init__ import external_dir, collation_dir, processed_dir, res_to_1hot
     # from .retrievers import AlphaFold_Retriever
     from .enm import ANM_Computer, TNM_Computer
-    from .encoders import ProtTrans_Encoder#, ProteinBERT_Encoder
-    # from .persistence_image import PI_Computer
+    from .encoders import ProtTrans_Encoder
 
 import os, torch, prody, warnings
 import numpy as np
@@ -122,7 +120,6 @@ class Dataset(pyg.data.Dataset):
 
         ### STATISTICS AFTER PROCESSING
         print(' -> Number of unique accessions :', len(self.processed_assemblies))
-
         print(' -> Number of labels to predict :', self.n_GO_terms)
 
         print('Dataset instantiation complete.')
@@ -228,7 +225,7 @@ class Dataset(pyg.data.Dataset):
             graph_file = os.path.join(self.graph_dir, f'{pdb_assembly_id}.pt')
             embedding_file = os.path.join(self.embedding_dir, f'{pdb_assembly_id}.pt')
 
-            ### SKIP IF POSSIBLE
+            ### SKIP PROCESSING IF FILES ALREADY EXIST
             if self.rebuild:
                 if os.path.exists(graph_file):
                     os.remove(graph_file)
@@ -240,10 +237,16 @@ class Dataset(pyg.data.Dataset):
             ):
                 continue
 
+
+
             ### READ PDB FILE AND GET INFO
-            # PDB files shoudl be preprocessed and cleaned
+            # PDB files should be preprocessed and cleaned
             path_to_pdb = os.path.join(self.raw_dir, f'{pdb_assembly_id}.pdb')
-            atoms = prody.parsePDB(path_to_pdb, subset='ca')
+            # The headers for multimers are empty bc they were removed
+            # when the biomt transforms were applied.
+            atoms = prody.parsePDB(
+                path_to_pdb, subset='ca'#, header=True
+            )
             min_resnum = atoms.getResnums().min()
 
             ### FIND THE SEGMENT OF SEQUENCE SHARED BY ALL CHAINS
@@ -303,8 +306,13 @@ class Dataset(pyg.data.Dataset):
             )
             atoms.setResnums(atoms.getResnums() + min_resnum)
             resnames = atoms.select('chain A').getSequence(allres=False)
+            n_residues = len(resnames)
+
+            # This is an incomplete sequence that does not include
+            # missing residues in the PDB entry. Use with caution.
             sequence = ''.join(resnames)
-            n_residues = len(sequence)
+
+
 
             ### CREATE HETERODATA OBJECT
             data = pyg.data.HeteroData()
@@ -332,9 +340,11 @@ class Dataset(pyg.data.Dataset):
             data['residue'].res1hot = torch.from_numpy(resnames_1hot)
             data['residue'].x = torch.from_numpy(resnames_1hot)
 
-            # ### PERSISTENCE IMAGES
-            # data.pi = torch.load(path_to_pi)
-
+            ### GET INDEXING
+            # mat_idx: 0-indexed for the entire protein sequentially
+            # resnums: original resnums in the PDB file, start from random number, may have gaps, restarts for each chain
+            # collapsed_idx: 0-indexed for each chain, based on chain A
+            # see data/collated/ANM/<id>/mappings.csv for details
             mat_idx, resnums, collapsed_idx, chain_id = self.enm_computer.get_mapping(
                 pdb_assembly_id
             )
@@ -351,7 +361,7 @@ class Dataset(pyg.data.Dataset):
                 pdb_assembly_id,
                 et_type='contact'
             )
-            loc_edge = np.bitwise_and(
+            loc_edge = np.bitwise_and( # graph built based on chain A
                 all_edge_index[:,0]<=mat_idx[-1],
                 all_edge_index[:,1]<=mat_idx[-1]
             )
@@ -617,14 +627,21 @@ if __name__ == '__main__':
     id_file = '../../data_curation/20250704-1 homo-multimer dataset (from scratch)/stats/OUT-6.entries_id.txt'
     anno_file = '../../data_curation/20250704-1 homo-multimer dataset (from scratch)/stats/OUT-6.labels_for_prediction.csv'
 
-    pdb_assembly_ids = np.loadtxt(id_file, dtype=np.str_)
+    pdb_assembly_ids = np.loadtxt(id_file, dtype=np.str_)[:10]
+    pdb_assembly_ids = np.asarray([
+        '1A64-1',
+        '1A12-1',
+        '1AJ8-1',
+        '1A3A-2',
+    ])
     print(pdb_assembly_ids.shape)
 
     annotations = np.loadtxt(
         anno_file,
         delimiter=',',
         dtype=np.int32
-    )
+    )[:len(pdb_assembly_ids)]
+    print(annotations.shape)
 
     edge_policy = '1CONT'
     thresholds = {

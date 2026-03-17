@@ -29,7 +29,7 @@ def plot_pr(
 
     # COMPUTE F1_MAX AND AUPR
     with np.errstate(divide='ignore', invalid='ignore'):
-        aupr = np.trapz(np.flip(precision), x=np.flip(recall))
+        aupr = np.trapezoid(np.flip(precision), x=np.flip(recall))
         f1 = 2*recall*precision / (recall+precision)
 
     f1_max_idx = np.nanargmax(f1)

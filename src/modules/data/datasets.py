@@ -244,74 +244,101 @@ class Dataset(pyg.data.Dataset):
             path_to_pdb = os.path.join(self.raw_dir, f'{pdb_assembly_id}.pdb')
             # The headers for multimers are empty bc they were removed
             # when the biomt transforms were applied.
+            # if self.use_monomers:
+            #     # always use chain A
+            #     atoms = prody.parsePDB(
+            #         path_to_pdb, chain='A', subset='ca'#, header=True
+            #     )
+            #     assert len(atoms) > 0
+            # else:
             atoms = prody.parsePDB(
                 path_to_pdb, subset='ca'#, header=True
             )
-            min_resnum = atoms.getResnums().min()
+            # min_resnum = atoms.getResnums().min()
 
-            ### FIND THE SEGMENT OF SEQUENCE SHARED BY ALL CHAINS
-            all_sequences = []
-            all_resnums = []
-            for chain_idx, chain in enumerate(atoms.iterChains()):
-                all_sequences.append(np.array([c for c in chain.getSequence(allres=False)]))
-                all_resnums.append(chain.getResnums())
+            # ### FIND THE SEGMENT OF SEQUENCE SHARED BY ALL CHAINS
+            # all_sequences = []
+            # all_resnums = []
+            # for chain_idx, chain in enumerate(atoms.iterChains()):
+            #     all_sequences.append(np.array([c for c in chain.getSequence(allres=False)]))
+            #     all_resnums.append(chain.getResnums())
 
-            # assert that resnums have one occurrence for all chains
-            for chain_idx in range(atoms.numChains()):
-                if len(np.unique(all_resnums[chain_idx])) != len(all_resnums[chain_idx]):
-                    raise ValueError(
-                        f'Chain {chain_idx} in {pdb_assembly_id} has duplicate resnums.'
-                        f' This should be dealt with before calling this dataset.'
-                    )
+            # # assert that resnums have one occurrence for all chains
+            # for chain_idx in range(atoms.numChains()):
+            #     if len(np.unique(all_resnums[chain_idx])) != len(all_resnums[chain_idx]):
+            #         raise ValueError(
+            #             f'Chain {chain_idx} in {pdb_assembly_id} has duplicate resnums.'
+            #             f' This should be dealt with before calling this dataset.'
+            #         )
 
-            # find intersection by resnums
-            resnum_unique, resnum_count = np.unique([
-                resnum for resnum_of_chain in all_resnums
-                for resnum in resnum_of_chain
-            ], return_counts=True)
-            resnum_intersection = resnum_unique[resnum_count == atoms.numChains()]
-            # print(len(resnum_intersection), 'residues in intersection')
-            if len(resnum_intersection) == 0:
-                tqdm.write(
-                    f' -> {pdb_assembly_id} has no residues in the intersection, discarding.'
-                    f' This should be dealt with before calling this dataset.'
-                )
-                continue
+            # assert that resnums within each chain are unique
 
-            # assert that all sequences are identical
-            for chain1_idx in range(atoms.numChains()):
-                for chain2_idx in range(chain1_idx+1, atoms.numChains()):
+            # # find intersection by resnums
+            # resnum_unique, resnum_count = np.unique([
+            #     resnum for resnum_of_chain in all_resnums
+            #     for resnum in resnum_of_chain
+            # ], return_counts=True)
+            # resnum_intersection = resnum_unique[resnum_count == atoms.numChains()]
+            # # print(len(resnum_intersection), 'residues in intersection')
+            # if len(resnum_intersection) == 0:
+            #     tqdm.write(
+            #         f' -> {pdb_assembly_id} has no residues in the intersection, discarding.'
+            #         f' This should be dealt with before calling this dataset.'
+            #     )
+            #     continue
 
-                    loc1 = np.isin(
-                        all_resnums[chain1_idx], resnum_intersection, assume_unique=True
-                    )
-                    loc2 = np.isin(
-                        all_resnums[chain2_idx], resnum_intersection, assume_unique=True
-                    )
-                    seq1_shared = all_sequences[chain1_idx][loc1]
-                    seq2_shared = all_sequences[chain2_idx][loc2]
+            # # assert that all sequences are identical
+            # for chain1_idx in range(atoms.numChains()):
+            #     for chain2_idx in range(chain1_idx+1, atoms.numChains()):
 
-                    assert np.array_equal(seq1_shared, seq2_shared)
+            #         loc1 = np.isin(
+            #             all_resnums[chain1_idx], resnum_intersection, assume_unique=True
+            #         )
+            #         loc2 = np.isin(
+            #             all_resnums[chain2_idx], resnum_intersection, assume_unique=True
+            #         )
+            #         seq1_shared = all_sequences[chain1_idx][loc1]
+            #         seq2_shared = all_sequences[chain2_idx][loc2]
+
+            #         assert np.array_equal(seq1_shared, seq2_shared)
 
             # if self.use_monomers:
-            # always use chain A
-            assert atoms.getChids()[0] == 'A'
-            atoms = atoms.select('chain A')
+            #     # always use chain A
+            #     assert atoms.getChids()[0] == 'A'
+            #     atoms = atoms.select('chain A')
 
-            # proceed with residues in the intersection
-            atoms.setResnums(atoms.getResnums() - min_resnum)
-            atoms = atoms.select(
-                f'resnum {resnum_intersection.min() - min_resnum} to '
-                f'{resnum_intersection.max() - min_resnum}'
-            )
-            atoms.setResnums(atoms.getResnums() + min_resnum)
-            resnames = atoms.select('chain A').getSequence(allres=False)
-            n_residues = len(resnames)
+            # # proceed with residues in the intersection
+            # atoms.setResnums(atoms.getResnums() - min_resnum)
+            # atoms = atoms.select(
+            #     f'resnum {resnum_intersection.min() - min_resnum} to '
+            #     f'{resnum_intersection.max() - min_resnum}'
+            # )
+            # atoms.setResnums(atoms.getResnums() + min_resnum)
+            # resnames = atoms.select('chain A').getSequence(allres=False)
+            # n_residues = len(resnames)
 
-            # This is an incomplete sequence that does not include
-            # missing residues in the PDB entry. Use with caution.
-            sequence = ''.join(resnames)
+            # # This is an incomplete sequence that does not include
+            # # missing residues in the PDB entry. Use with caution.
+            # sequence = ''.join(resnames)
 
+            # assert that resnums are unique within each chain
+            resnames_by_chain = {}
+            for chain in atoms.iterChains():
+                resnums = chain.getResnums()
+                if not len(np.unique(resnums)) == len(resnums):
+                    tqdm.write(
+                        f' -> {pdb_assembly_id} has duplicate resnums in chain {chain.getChid()}.'
+                        f' This should be dealt with before calling this dataset.'
+                    )
+                    continue
+
+                resnames_by_chain[chain.getChid()] = chain.getSequence(allres=False)
+
+            if self.use_monomers:
+                n_residues = len(resnames_by_chain['A'])
+                assert n_residues > 0
+            else:
+                n_residues = len(atoms)
 
 
             ### CREATE HETERODATA OBJECT
@@ -319,24 +346,43 @@ class Dataset(pyg.data.Dataset):
             data.pdb_assembly_id = pdb_assembly_id
             data.num_nodes = n_residues
 
-            try:
-                resnum_intersection = resnum_intersection.astype(np.int32)
-            except ValueError:
-                tqdm.write(
-                    f' -> {pdb_assembly_id} contains non-integer resids, discarding.'
-                )
-                continue
+            # try:
+            #     resnum_intersection = resnum_intersection.astype(np.int32)
+            # except ValueError:
+            #     tqdm.write(
+            #         f' -> {pdb_assembly_id} contains non-integer resids, discarding.'
+            #     )
+            #     continue
 
             # convert resIDs to one-hot-encoding
-            resnames_1hot = np.zeros((n_residues, 20), dtype=np.int32)
-            try:
-                for j, resname in enumerate(resnames):
-                    resnames_1hot[j, res_to_1hot[resname]] = 1
-            except KeyError:
-                tqdm.write(
-                    f' -> {pdb_assembly_id} contains non-standard amino acids ({resname}), discarding.'
-                )
+            resnames_1hot_by_chain = {}
+            discard = False
+            for chain_id, resnames in resnames_by_chain.items():
+                if discard:
+                    continue
+
+                resnames_1hot_for_chain = np.zeros((len(resnames), 20), dtype=np.int32)
+                try:
+                    for j, resname in enumerate(resnames):
+                        resnames_1hot_for_chain[j, res_to_1hot[resname]] = 1
+                except KeyError:
+                    tqdm.write(
+                        f' -> {pdb_assembly_id} contains non-standard amino acids ({resname}), discarding.'
+                    )
+                    discard = True
+                    continue
+                resnames_1hot_by_chain[chain_id] = resnames_1hot_for_chain
+            if discard:
                 continue
+
+            if self.use_monomers:
+                resnames_1hot = resnames_1hot_by_chain['A']
+            else:
+                resnames_1hot = np.vstack([
+                    resnames_1hot_by_chain[chain_id]
+                    for chain_id in resnames_by_chain
+                ])
+
             data['residue'].res1hot = torch.from_numpy(resnames_1hot)
             data['residue'].x = torch.from_numpy(resnames_1hot)
 
@@ -348,10 +394,10 @@ class Dataset(pyg.data.Dataset):
             mat_idx, resnums, collapsed_idx, chain_id = self.enm_computer.get_mapping(
                 pdb_assembly_id
             )
-            loc_chain = chain_id=='A'
-            mat_idx = mat_idx[loc_chain]
-            resnums = resnums[loc_chain]
-            collapsed_idx = collapsed_idx[loc_chain]
+            # loc_chain = chain_id=='A'
+            # mat_idx = mat_idx[loc_chain]
+            # resnums = resnums[loc_chain]
+            # collapsed_idx = collapsed_idx[loc_chain]
 
             assert len(mat_idx) == mat_idx[-1] + 1
 
@@ -361,37 +407,40 @@ class Dataset(pyg.data.Dataset):
                 pdb_assembly_id,
                 et_type='contact'
             )
-            loc_edge = np.bitwise_and( # graph built based on chain A
-                all_edge_index[:,0]<=mat_idx[-1],
-                all_edge_index[:,1]<=mat_idx[-1]
-            )
-            all_edge_index = all_edge_index[loc_edge]
-            resnum_ij = resnum_ij[loc_edge]
-            distance = distance[loc_edge]
+            # loc_edge = np.bitwise_and( # graph built based on chain A
+            #     all_edge_index[:,0]<=mat_idx[-1],
+            #     all_edge_index[:,1]<=mat_idx[-1]
+            # )
+            # all_edge_index = all_edge_index[loc_edge]
+            # resnum_ij = resnum_ij[loc_edge]
+            # distance = distance[loc_edge]
 
-            loc_to_include = (
-                np.isin(resnum_ij[:,0], resnum_intersection, assume_unique=True) &
-                np.isin(resnum_ij[:,1], resnum_intersection, assume_unique=True)
-            )
-            min_mat_idx = all_edge_index[loc_to_include,:].min()
+            # loc_to_include = (
+            #     np.isin(resnum_ij[:,0], resnum_intersection, assume_unique=True) &
+            #     np.isin(resnum_ij[:,1], resnum_intersection, assume_unique=True)
+            # )
+            # min_mat_idx = all_edge_index[loc_to_include,:].min()
+            # min_mat_idx = all_edge_index.min()
 
-            # dictionaries to convert between resnum and matrix index
-            resnum2homo_idx = {
-                resnums[idx]: collapsed_idx[idx] - min_mat_idx
-                for idx in range(len(resnums))
-            }
-            multi2homo_idx = {
-                mat_idx[idx]: collapsed_idx[idx] - min_mat_idx
-                for idx in range(len(mat_idx))
-            }
-            collapse_fn = np.vectorize( lambda x: multi2homo_idx[x] )
+            # # dictionaries to convert between resnum and matrix index
+            # resnum2homo_idx = {
+            #     resnums[idx]: collapsed_idx[idx] - min_mat_idx
+            #     for idx in range(len(resnums))
+            # }
+            # multi2homo_idx = {
+            #     mat_idx[idx]: collapsed_idx[idx] - min_mat_idx
+            #     for idx in range(len(mat_idx))
+            # }
+            # collapse_fn = np.vectorize( lambda x: multi2homo_idx[x] )
 
-            # remove unwanted residues
-            all_edge_index = all_edge_index[loc_to_include,:]
-            distance = distance[loc_to_include]
+            # # remove unwanted residues
+            # all_edge_index = all_edge_index[loc_to_include,:]
+            # distance = distance[loc_to_include]
 
             edge_index = all_edge_index[distance <= 12].T # directed
-            edge_index = np.unique(collapse_fn(edge_index), axis=1) # convert indices
+            # print(edge_index)
+            # print(edge_index.shape, atoms.numChains())
+            # edge_index = np.unique(collapse_fn(edge_index), axis=1) # convert indices
             edge_index = np.hstack(( # undirected
                 edge_index,
                 np.flip(edge_index, axis=0)
@@ -405,34 +454,38 @@ class Dataset(pyg.data.Dataset):
                 'contact': float(self.thresholds['contact'])
             }
 
-            ### ADD BACKBONE CONNECTION
-            edge_index = []
-            for res_idx in range(len(resnum_intersection)-1):
-                if resnum_intersection[res_idx+1] - resnum_intersection[res_idx] == 1:
-                    edge_index.append((
-                        resnum2homo_idx[int(resnum_intersection[res_idx])],
-                        resnum2homo_idx[int(resnum_intersection[res_idx+1])]
-                    ))
-            edge_index = np.array(edge_index, dtype=np.int32).T # directed
-            edge_index = np.unique(edge_index, axis=1)
-            edge_index = np.hstack(( # undirected
-                edge_index,
-                np.flip(edge_index, axis=0)
-            ))
-            data['residue', 'backbone', 'residue'].edge_index = torch.from_numpy(
-                edge_index
-            )
+            # ### ADD BACKBONE CONNECTION
+            # edge_index = []
+            # for res_idx in range(len(resnum_intersection)-1):
+            #     if resnum_intersection[res_idx+1] - resnum_intersection[res_idx] == 1:
+            #         edge_index.append((
+            #             resnum2homo_idx[int(resnum_intersection[res_idx])],
+            #             resnum2homo_idx[int(resnum_intersection[res_idx+1])]
+            #         ))
+            # edge_index = np.array(edge_index, dtype=np.int32).T # directed
+            # edge_index = np.unique(edge_index, axis=1)
+            # edge_index = np.hstack(( # undirected
+            #     edge_index,
+            #     np.flip(edge_index, axis=0)
+            # ))
+            # data['residue', 'backbone', 'residue'].edge_index = torch.from_numpy(
+            #     edge_index
+            # )
+
+            # print('contact complete')
 
             ### ADD DYNAMICAL COUPLING EDGES
             # 1. self-loops are not included
             # 2. indices are 0-based
             for ct in coupling_types:
 
+                # print(ct)
+
                 _, _, couplings = self.enm_computer.get_couplings(
                     pdb_assembly_id,
                     et_type=ct
                 )
-                couplings = couplings[loc_edge][loc_to_include]
+                # couplings = couplings[loc_edge][loc_to_include]
 
                 # dataset-wide thresholds
                 if self.thresholds[ct].endswith('DCONT'):
@@ -510,7 +563,7 @@ class Dataset(pyg.data.Dataset):
                     break
 
                 edge_index = all_edge_index[couplings >= threshold].T # directed
-                edge_index = np.unique(collapse_fn(edge_index), axis=1) # convert indices
+                # edge_index = np.unique(collapse_fn(edge_index), axis=1) # convert indices
                 edge_index = np.hstack(( # undirected
                     edge_index,
                     np.flip(edge_index, axis=0)
@@ -521,13 +574,14 @@ class Dataset(pyg.data.Dataset):
                 )
 
             if discard:
-                del resnum2homo_idx
-                del multi2homo_idx
-                del collapse_fn
+                # del resnum2homo_idx
+                # del multi2homo_idx
+                # del collapse_fn
                 continue
 
             ### MERGE EDGES (IF SPECIFIED)
             if self.merge_edge_types:
+                raise NotImplementedError
                 edge_types_to_merge = [
                     k for k, v in self.thresholds.items() if v != 'X'
                 ]
@@ -570,14 +624,24 @@ class Dataset(pyg.data.Dataset):
             torch.save(
                 data, os.path.join(self.graph_dir, f'{pdb_assembly_id}.pt')
             )
-            torch.save(
-                encoder(sequence),
-                os.path.join(self.embedding_dir, f'{pdb_assembly_id}.pt'),
-            )
 
-            del resnum2homo_idx
-            del multi2homo_idx
-            del collapse_fn
+            ### SEQUENTIAL EMBEDDING
+            emb_file = os.path.join(self.embedding_dir, f'{pdb_assembly_id}.pt')
+
+            if not os.path.exists(emb_file):
+
+                emb_by_chain = {}
+                for chain_id, resnames in resnames_by_chain.items():
+                    emb_by_chain[chain_id] = encoder(''.join(resnames))
+
+                torch.save(
+                    np.vstack([emb for emb in emb_by_chain.values()]),
+                    emb_file
+                )
+
+            # del resnum2homo_idx
+            # del multi2homo_idx
+            # del collapse_fn
 
         # reclaim device memory
         del encoder
@@ -612,10 +676,14 @@ class Dataset(pyg.data.Dataset):
             os.path.join(self.graph_dir, filename),
             weights_only=False
         )
-        data['residue'].x = torch.load(
+        embedding = torch.load(
             os.path.join(self.embedding_dir, filename),
             weights_only=False
         )
+        if self.use_monomers:
+            data['residue'].x = embedding[:data.num_nodes]
+        else:
+            data['residue'].x = embedding
         data.y = torch.tensor(
             self.annotations[idx], dtype=torch.bool
         ).reshape(1, -1)
@@ -627,13 +695,13 @@ if __name__ == '__main__':
     id_file = '../../data_curation/20250704-1 homo-multimer dataset (from scratch)/stats/OUT-6.entries_id.txt'
     anno_file = '../../data_curation/20250704-1 homo-multimer dataset (from scratch)/stats/OUT-6.labels_for_prediction.csv'
 
-    pdb_assembly_ids = np.loadtxt(id_file, dtype=np.str_)[:10]
-    pdb_assembly_ids = np.asarray([
-        '1A64-1',
-        '1A12-1',
-        '1AJ8-1',
-        '1A3A-2',
-    ])
+    pdb_assembly_ids = np.loadtxt(id_file, dtype=np.str_)#[:10]
+    # pdb_assembly_ids = np.asarray([
+    #     '1A64-1',
+    #     '1A12-1',
+    #     '1AJ8-1',
+    #     '1A3A-2',
+    # ])
     print(pdb_assembly_ids.shape)
 
     annotations = np.loadtxt(

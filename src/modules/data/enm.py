@@ -61,6 +61,7 @@ class ANM_Computer:
         filenames = {
             'couplings': 'coupling.csv',
             'mapping': 'mapping.csv',
+            'freq': 'freq.csv',
         }
         return {k: os.path.join(work_dir, filenames[k]) for k in filenames}
 
@@ -94,9 +95,13 @@ class ANM_Computer:
 
         if (
             os.path.exists(self.path_to_outputs(entry_id)['couplings']) and
-            os.stat(self.path_to_outputs(entry_id)['couplings']).st_size != 0 and
+            os.stat(self.path_to_outputs(entry_id)['couplings']).st_size != 0
+            and
             os.path.exists(self.path_to_outputs(entry_id)['mapping']) and
             os.stat(self.path_to_outputs(entry_id)['mapping']).st_size != 0
+            and
+            os.path.exists(self.path_to_outputs(entry_id)['freq']) and
+            os.stat(self.path_to_outputs(entry_id)['freq']).st_size != 0
         ):
             return work_dir
 
@@ -162,6 +167,10 @@ class ANM_Computer:
 
         modes = anm.getEigvecs().T
         freq_sq = anm.getEigvals()
+
+        # print(freq_sq.shape)
+        # print(freq_sq)
+        # raise
 
         if len(modes) != self.n_modes:
             with open(self.failure_path, 'a+') as f:
@@ -331,6 +340,11 @@ class ANM_Computer:
             delimiter=',',
             comments='#',
             fmt=','.join(fmt)
+        )
+
+        np.savetxt(
+            self.path_to_outputs(entry_id)['freq'],
+            np.sqrt(freq_sq),
         )
 
         return work_dir
@@ -913,63 +927,31 @@ if __name__ == '__main__':
 
     pdb_dir = '/mnt/hdd/yenlin/data/Protein_Data_Bank/pdb-biomt'
 
-    enm_computer = ANM_Computer(
-        cutoff=12,
-        n_modes=20,
-        use_monomers=True,
-    )
+    id_file = '../../data_curation/20250704-1 homo-multimer dataset (from scratch)/stats/OUT-6.entries_id.txt'
+    entry_ids = np.loadtxt(id_file, dtype=np.str_)#[:10]
 
-    # print(enm_computer.get_failed_entries())
+    # entry_ids = [
+    #     # '19HC-1',
+    #     # '1A05-1',
+    #     '1A0G-1',
+    #     # '1A0J-2',
+    #     # '1A0M-1',
+    #     # '1A12-1',
+    #     '4HP2-1'
+    # ]
 
-    # entry_id = '1A0G-1'
-    # entry_id = '4HP2-1'
+    for use_monomers in [True, False]:
 
-    # work_dir = enm_computer.run(
-    #     entry_id=entry_id,
-    #     pdb_path=f'{pdb_dir}/{entry_id}.pdb',
-    # )
+        enm_computer = ANM_Computer(
+            cutoff=12,
+            n_modes=20,
+            use_monomers=use_monomers,
+        )
 
-    # if work_dir:
-    #     print(f'ANM computation for {entry_id} completed')
-    # else:
-    #     print(f'ANM computation for {entry_id} failed')
-
-    entry_ids = [
-        # '19HC-1',
-        # '1A05-1',
-        '1A0G-1',
-        # '1A0J-2',
-        # '1A0M-1',
-        # '1A12-1',
-        '4HP2-1'
-    ]
-
-    successful_entries, failed_entries = enm_computer.batch_run(
-        entry_ids=entry_ids,
-        pdb_path_list=[f'{pdb_dir}/{entry_id}.pdb' for entry_id in entry_ids],
-        retry=False
-    )
-    print(successful_entries)
-    print(failed_entries)
-
-
-    # removed_accessions = enm_computer.cleanup_failed()
-    # print(removed_accessions)
-    # print(len(removed_accessions))
-
-    # # # work_dir = enm_computer.run(
-    # # #     'Q6ZS30-AFv4',
-    # # #     '/Users/sebastian/Dropbox/projects/ai-thermostability/code/data/external/AlphaFoldDB/pdb/Q6ZS30-AFv4.pdb'
-    # # # )
-    # # # print(work_dir)
-
-    # # root = '/Users/sebastian/Dropbox/projects/ai-thermostability/code/data/external/AlphaFoldDB/pdb'
-    # # accessions = ['Q6ZS30-AFv4', 'D6RIN3-AFv4', 'D6RE34-AFv4', 'E5RJZ4-AFv4', 'H3BS66-AFv4', 'Q93HR1-AFv4', 'H2L294-AFv4', 'K7EKI6-AFv4', 'E9QG37-AFv4']
-    # # pdb_path_list = [os.path.join(root, accession+'.pdb') for accession in accessions]
-
-    # # successful, failed = enm_computer.batch_run(accessions,
-    # #                                          pdb_path_list,
-    # #                                          retry=False)
-
-    # # print(successful)
-    # # print(failed)
+        successful_entries, failed_entries = enm_computer.batch_run(
+            entry_ids=entry_ids,
+            pdb_path_list=[f'{pdb_dir}/{entry_id}.pdb' for entry_id in entry_ids],
+            retry=True
+        )
+        print(successful_entries)
+        print(failed_entries)

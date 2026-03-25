@@ -82,13 +82,16 @@ class Dataset(pyg.data.Dataset):
             self.sequence_embedding
         )
 
+        if self.entries_should_be_ready:
+            assert os.path.exists(self.graph_dir)
+            assert os.path.exists(self.embedding_dir)
         os.makedirs(
             self.graph_dir,
-            exist_ok=not self.entries_should_be_ready
+            exist_ok=True
         )
         os.makedirs(
             self.embedding_dir,
-            exist_ok=not self.entries_should_be_ready
+            exist_ok=True
         )
 
         ### PROCESS ANNOTATIONS

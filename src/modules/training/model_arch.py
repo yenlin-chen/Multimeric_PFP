@@ -15,7 +15,7 @@ from torchinfo import summary
 
 import torch_geometric as pyg
 
-model_version = 'v1'
+# model_version = 'v1'
 
 def simple_embedding_block(
         neuron_ls,
@@ -426,7 +426,9 @@ class SimplifiedMultiGCN(nn.Module):
         # FC LAYERS
         ################################################################
         x = self.fc_block(fc_input)
+        # x = torch.sigmoid(x)
 
+        # Sigmoid activation is included in BCEWithLogitLoss
         return x
 
     def save_args(self, save_dir):

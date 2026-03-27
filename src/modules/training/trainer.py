@@ -207,6 +207,8 @@ class Trainer:
             pred = self.model(data_batch)
             true = data_batch.y.float()
 
+            pred = torch.sigmoid(pred)
+
             ### compute loss
             total_loss += self.loss_fn(pred, true).item()
 

@@ -128,6 +128,7 @@ class Trainer:
             true = data_batch.y.float()
 
             ### compute the loss and its gradients
+            # BCEWithLogitsLoss includes a sigmoid layer
             loss = self.loss_fn(pred, true)
             # backpropagate
             loss.backward()
@@ -142,7 +143,7 @@ class Trainer:
             # convert predicted values back to Celsius
             start = i * batch_size
             end = start + pred.shape[0]
-            preds[start:end] = pred
+            preds[start:end] = torch.sigmoid(pred)
             trues[start:end] = true
             # accessions[i*batch_size:(i+1)*batch_size] = data_batch.accession
 
@@ -207,16 +208,14 @@ class Trainer:
             pred = self.model(data_batch)
             true = data_batch.y.float()
 
-            pred = torch.sigmoid(pred)
-
-            ### compute loss
+            ### compute loss (BCEWithLogitsLoss includes a sigmoid layer)
             total_loss += self.loss_fn(pred, true).item()
 
             ### gather model outputs and labels
             # convert predicted values back to Celsius
             start = i * batch_size
             end = start + pred.shape[0]
-            preds[start:end] = pred
+            preds[start:end] = torch.sigmoid(pred)
             trues[start:end] = true
             # accessions[i*batch_size:(i+1)*batch_size] = data_batch.accession
 
